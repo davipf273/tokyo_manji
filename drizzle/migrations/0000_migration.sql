@@ -1,0 +1,17 @@
+create table public.roles (id uuid primary key default gen_random_uuid(), name text not null, color text not null default '#7aa2f7', created_at timestamptz not null default now());
+create table public.members (id uuid primary key default gen_random_uuid(), nickname text not null unique, role_id uuid references public.roles(id) on delete set null, created_at timestamptz not null default now());
+create table public.channels (id uuid primary key default gen_random_uuid(), name text not null, kind text not null default 'text', created_at timestamptz not null default now());
+create table public.messages (id uuid primary key default gen_random_uuid(), channel_id uuid not null references public.channels(id) on delete cascade, member_id uuid references public.members(id) on delete set null, nickname text not null, content text not null, created_at timestamptz not null default now());
+grant select, insert, update, delete on public.roles, public.members, public.channels, public.messages to anon, authenticated;
+grant all on public.roles, public.members, public.channels, public.messages to service_role;
+alter table public.roles enable row level security;
+alter table public.members enable row level security;
+alter table public.channels enable row level security;
+alter table public.messages enable row level security;
+create policy "open roles" on public.roles for all to anon, authenticated using (true) with check (true);
+create policy "open members" on public.members for all to anon, authenticated using (true) with check (true);
+create policy "open channels" on public.channels for all to anon, authenticated using (true) with check (true);
+create policy "open messages" on public.messages for all to anon, authenticated using (true) with check (length(content) between 1 and 2000);
+alter publication supabase_realtime add table public.roles, public.members, public.channels, public.messages;
+insert into public.roles (name, color) values ('Admin', '#f7768e'), ('Moderador', '#e0af68'), ('Membro', '#9ece6a');
+insert into public.channels (name, kind) values ('geral', 'text'), ('memes', 'text'), ('Sala de Voz', 'voice'), ('Gaming', 'voice');
